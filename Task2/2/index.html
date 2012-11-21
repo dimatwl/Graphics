@@ -93,7 +93,7 @@
 
 			// camera
 			var camera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000 );
-			//camera.position.z = 20;
+			camera.position.z = 20;
 
 			var originalProjectionMatrix = (new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 5, 25 )).projectionMatrix.clone();
 
@@ -177,7 +177,7 @@
 				
 				// loader
 				var loader = new THREE.JSONLoader(),
-					callbackModel   = function( geometry ) { createScene( geometry,  0, 0, -50) };
+					callbackModel   = function( geometry ) { createScene( geometry,  0, 0, 0) };
 				loader.load( "../js/model.js",  callbackModel );
 
 				//ModifyProjectionMatrix(clipPlane, camera);
@@ -196,7 +196,7 @@
 				frustum.scale.set( 1, 1, 1 );
 				frustum.shaderMaterial = shaderMaterial;
 				frustum.wireframwMaterial = wireframwMaterial;
-				//scene.add( frustum );
+				scene.add( frustum );
 				console.log(frustum);
 
 			}

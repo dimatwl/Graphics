@@ -95,7 +95,7 @@
 			var camera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000 );
 			//camera.position.z = 20;
 
-			var originalProjectionMatrix = camera.projectionMatrix.clone();
+			var originalProjectionMatrix = (new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 40, 60 )).projectionMatrix.clone();
 
 			var gl = null;
 
@@ -172,7 +172,7 @@
 				gl = webglRenderer.context;
 
 				gl.disable(gl.CULL_FACE);
-
+				//gl.enable(gl.CULL_FACE);
 				console.log(gl);
 				
 				// loader
@@ -196,7 +196,7 @@
 				frustum.scale.set( 1, 1, 1 );
 				frustum.shaderMaterial = shaderMaterial;
 				frustum.wireframwMaterial = wireframwMaterial;
-				scene.add( frustum );
+				//scene.add( frustum );
 				console.log(frustum);
 
 			}

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>WebGL made easy</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background:#000;
+				padding:0;
+				margin:0;
+				overflow:hidden;
+				font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', arial, helvetica, sans-serif;
+				text-align:center;
+			}
+			canvas { pointer-events:none; z-index:10; }
+			
+			p { font-size: small;}
+
+		</style>
+	</head>
+
+	<body>
+
+		<script src="../js/detector.js"></script>
+		<script src="../js/three.js"></script>
+		
+		<script src="../js/raf.js"></script>
+
+		<script>
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var SCREEN_WIDTH = window.innerWidth;
+			var SCREEN_HEIGHT = window.innerHeight;
+			var FLOOR = 0;
+
+			var container;
+
+			var camera, scene;
+			var webglRenderer;
+
+			var zmesh, geometry;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var normal = new THREE.Vector3(0,1,0);
+			var basePoint = new THREE.Vector3(0, 0, 20);
+			var clipPlane = new THREE.Vector4(normal.x, normal.y, normal.z, normal.dot(basePoint));
+
+			// camera
+			var camera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 100000 );
+			camera.position.z = 20;
+
+			var originalProjectionMatrix = camera.projectionMatrix.clone();
+
+			document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+			init();
+			animate();
+
+			function sgn(number) {
+				return number && number / Math.abs(number);
+			}
+
+			function ModifyProjectionMatrix(inpClipPlane, inpCamera)
+			{
+			    q = new THREE.Vector4();
+
+			    // Grab the current projection matrix from OpenGL
+			    //glGetFloatv(GL_PROJECTION_MATRIX, matrix);
+			    matrix = originalProjectionMatrix.clone();
+
+			    // Calculate the clip-space corner point opposite the clipping plane
+			    // as (sgn(clipPlane.x), sgn(clipPlane.y), 1, 1) and
+			    // transform it into camera space by multiplying it
+			    // by the inverse of the projection matrix
+			    
+			    q.x = (sgn(inpClipPlane.x) + matrix.elements[8]) / matrix.elements[0];
+			    q.y = (sgn(inpClipPlane.y) + matrix.elements[9]) / matrix.elements[5];
+			    q.z = -1.0;
+			    q.w = (1.0 + matrix.elements[10]) / matrix.elements[14];
+			    
+
+			    // Calculate the scaled plane vector
+			    //Vector4D c = clipPlane * (2.0F / Dot(clipPlane, q));
+
+
+			    c = inpClipPlane.clone().multiplyScalar(2.0 / inpClipPlane.clone().dot(q));
+			    
+			    // Replace the third row of the projection matrix
+			    matrix.elements[2] = c.x;
+			    matrix.elements[6] = c.y;
+			    matrix.elements[10] = c.z + 1.0;
+			    matrix.elements[14] = c.w;
+
+			    // Load it back into OpenGL
+			    //glMatrixMode(GL_PROJECTION);
+			    //glLoadMatrix(matrix);
+			    inpCamera.projectionMatrix = matrix;
+			}
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				
+				//scene
+				scene = new THREE.Scene();
+
+				// lights
+				//var ambient = new THREE.AmbientLight( 0x00000000 );
+				//scene.add( ambient );
+
+				// more lights
+				var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				directionalLight.position.set( 0, -70, 100 ).normalize();
+				scene.add( directionalLight );
+				
+				// renderer
+				webglRenderer = new THREE.WebGLRenderer( { antialias: true } );
+				webglRenderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+				webglRenderer.domElement.style.position = "relative";
+				container.appendChild( webglRenderer.domElement );
+				
+				// loader
+				var loader = new THREE.JSONLoader(),
+					callbackModel   = function( geometry ) { createScene( geometry,  0, 0, 0) };
+				loader.load( "../js/model.js",  callbackModel );
+
+
+				//matrix = new THREE.Matrix4();
+				//matrix.setRotationFromEuler(zmesh.rotation, "XYZ");
+				//matrix.rotateZ(Math.PI/2);
+				//clipPlane = matrix.multiplyVector4(clipPlane.clone());
+				//console.debug(matrix);
+				//console.debug(clipPlane);
+
+				console.debug(camera);
+
+				ModifyProjectionMatrix(clipPlane, camera);
+
+				console.debug(camera);
+
+				
+			}
+
+			function createScene( geometry, x, y, z ) {
+
+				zmesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial() );
+				zmesh.position.set( x, y, z );
+				zmesh.scale.set( 1, 1, 1 );
+				scene.add( zmesh );
+			}
+
+			function onDocumentMouseMove(event) {
+
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY );
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			var i = 0;
+
+			function render() {
+
+				//alert();
+
+				angleX = -mouseY/150;
+				angleY = -mouseX/150;
+
+				if (angleX > 0) normal = new THREE.Vector3(0,-1,0);
+				else normal = new THREE.Vector3(0,1,0);
+
+				zmesh.rotation.set(angleX, angleY, 0);
+
+				matrix = new THREE.Matrix4();
+				matrix.setRotationFromEuler(new THREE.Vector3(angleX, angleY, 0), "XYZ");
+				newNormal = matrix.multiplyVector3(normal.clone());
+				newClipPlane = new THREE.Vector4(newNormal.x, newNormal.y, newNormal.z, newNormal.dot(basePoint));
+
+				ModifyProjectionMatrix(newClipPlane, camera);
+
+				webglRenderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>

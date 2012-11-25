@@ -54,6 +54,8 @@
 			var camera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 5, 25 );
 			camera.position.z = 20;
 
+			console.log(camera);
+
 			var originalProjectionMatrix = camera.projectionMatrix.clone();
 
 			document.addEventListener( 'mousemove', onDocumentMouseMove, false );

@@ -99,6 +99,9 @@
 			frustumCamera.position.z = 20;
 
 			var originalProjectionMatrix = frustumCamera.projectionMatrix.clone();
+			console.log(originalProjectionMatrix);
+
+			var modifiedProjectionMatrix;
 
 			var gl = null;
 
@@ -145,7 +148,7 @@
 			    // Load it back into OpenGL
 			    //glMatrixMode(GL_PROJECTION);
 			    //glLoadMatrix(matrix);
-			    inpCamera.projectionMatrix = matrix;
+			    modifiedProjectionMatrix = matrix.clone();
 			}
 
 			function init() {
@@ -178,32 +181,68 @@
 				gl.depthFunc(gl.LESS);
 
 				//gl.disable(gl.CULL_FACE);
-				//gl.enable(gl.CULL_FACE);
+				gl.enable(gl.CULL_FACE);
 				//console.log(gl);
+
+				ModifyProjectionMatrix(clipPlane);
 				
 				// loader
 				var loader = new THREE.JSONLoader(),
 					callbackModel   = function( geometry ) { createScene( geometry,  0, 0, 0) };
 				loader.load( "../js/model.js",  callbackModel );
 
-				//ModifyProjectionMatrix(clipPlane, camera);
-
 
 			}
 
 			function createScene( geometry, x, y, z ) {
-				frustumGeometry = new THREE.CubeGeometry( 2, 2, 2, 1, 1, 1 );
-				inversetProjectionMatrix = originalProjectionMatrix.clone();
-				console.log(inversetProjectionMatrix);
-				inversetProjectionMatrix.getInverse(originalProjectionMatrix);
-				console.log(inversetProjectionMatrix);
-				frustumGeometry.applyMatrix(inversetProjectionMatrix);
-				frustumGeometry.computeFaceNormals();
-				frustumGeometry.computeVertexNormals();
-				console.log(frustumGeometry);
+				frustumMatrix = originalProjectionMatrix;
+
+				near = (frustumMatrix.elements[11] / (frustumMatrix.elements[10] - 1.0)) * 12.5 - frustumCamera.position.z/2;
+			    far = (frustumMatrix.elements[11] / (1.0 + frustumMatrix.elements[10])) * 12.5 - frustumCamera.position.z/2;
+
+			    console.log(near);
+			    console.log(far);
+
+			    // Get the sides of the near plane.
+			    nLeft = near * (frustumMatrix.elements[2] - 1.0) / frustumMatrix.elements[0];
+			    nRight = near * (1.0 + frustumMatrix.elements[2]) / frustumMatrix.elements[0];
+			    nTop = near * (1.0 + frustumMatrix.elements[6]) / frustumMatrix.elements[5];
+			    nBottom = near * (frustumMatrix.elements[6] - 1.0) / frustumMatrix.elements[5];
+
+			    // Get the sides of the far plane.
+			    fLeft = far * (frustumMatrix.elements[2] - 1.0) / frustumMatrix.elements[0];
+			    fRight = far * (1.0 + frustumMatrix.elements[2]) / frustumMatrix.elements[0];
+			    fTop = far * (1.0 + frustumMatrix.elements[6]) / frustumMatrix.elements[5];
+			    fBottom = far * (frustumMatrix.elements[6] - 1.0) / frustumMatrix.elements[5];
+
+			    frustumGeometry = new THREE.Geometry();
+			    //glVertex3f(nLeft, nBottom, -near);
+		        //glVertex3f(nRight, nBottom, -near);
+		        //glVertex3f(nRight, nTop, -near);
+		        //glVertex3f(nLeft, nTop, -near);
+		        //glVertex3f(fLeft, fBottom, -far);
+		        //glVertex3f(fRight, fBottom, -far);
+		        //glVertex3f(fRight, fTop, -far);
+		        //glVertex3f(fLeft, fTop, -far);
+		        frustumGeometry = new THREE.CubeGeometry( 2, 2, 2, 1, 1, 1 );
+		        
+		        frustumGeometry.vertices[0] =  new THREE.Vector3( nLeft, nBottom, -near ) ;
+			    frustumGeometry.vertices[1] =  new THREE.Vector3( nRight, nBottom, -near );
+			    frustumGeometry.vertices[2] =  new THREE.Vector3( nLeft, nTop, -near );
+			    frustumGeometry.vertices[3] =  new THREE.Vector3( nRight, nTop, -near );
+			    
+			    frustumGeometry.vertices[4] =  new THREE.Vector3( fLeft, fTop, -far );
+			    frustumGeometry.vertices[5] =  new THREE.Vector3( fRight, fTop, -far );
+			    frustumGeometry.vertices[6] =  new THREE.Vector3( fLeft, fBottom, -far );
+			    frustumGeometry.vertices[7] =  new THREE.Vector3( fRight, fBottom, -far );
+
 				frustumMesh = new THREE.Mesh( frustumGeometry, wireframwMaterial );
 				frustumMesh.position.set( frustumCamera.position.x, frustumCamera.position.y, frustumCamera.position.z );
 				frustumMesh.scale.set( 1, 1, 1 );
+
+
+				console.log(frustumGeometry);
+
 				THREE.GeometryUtils.merge(geometry, frustumMesh);
 				zmesh = new THREE.Mesh( geometry, wireframwMaterial );
 				zmesh.position.set( x, y, z );

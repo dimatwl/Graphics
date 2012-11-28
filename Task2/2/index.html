@@ -70,7 +70,7 @@
 			var camera, scene;
 			var webglRenderer;
 
-			var zmesh, frustum;
+			var zmesh, cow, frustum;
 
 			var mouseX = 0, mouseY = 0;
 
@@ -98,9 +98,7 @@
 			var frustumCamera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, 5, 25 );
 			frustumCamera.position.z = 20;
 
-			var originalProjectionMatrix = frustumCamera.projectionMatrix.clone();
-
-			var modifiedProjectionMatrix;
+			originalProjectionMatrix = frustumCamera.projectionMatrix.clone();
 
 			var gl = null;
 
@@ -147,7 +145,8 @@
 			    // Load it back into OpenGL
 			    //glMatrixMode(GL_PROJECTION);
 			    //glLoadMatrix(matrix);
-			    modifiedProjectionMatrix = matrix.clone();
+
+			    inpCamera.projectionMatrix = matrix;
 			}
 
 			function init() {
@@ -180,77 +179,59 @@
 				gl.depthFunc(gl.LESS);
 
 				//gl.disable(gl.CULL_FACE);
-				gl.enable(gl.CULL_FACE);
+				//gl.enable(gl.CULL_FACE);
 				//console.log(gl);
-
-				ModifyProjectionMatrix(clipPlane);
 				
 				// loader
 				var loader = new THREE.JSONLoader(),
-					callbackModel   = function( geometry ) { createScene( geometry,  0, 0, 0) };
+					callbackModel   = function( geometry ) { loadCow( geometry,  0, 0, 0) };
 				loader.load( "../js/model.js",  callbackModel );
+
+				//ModifyProjectionMatrix(clipPlane, camera);
 
 
 			}
 
-			function createScene( geometry, x, y, z ) {
-				frustumMatrix = originalProjectionMatrix;
+			function loadCow( geometry, x, y, z ) {
+				cow = new THREE.Mesh( geometry, wireframwMaterial );
+				cow.position.set( x, y, z );
+				cow.scale.set( 1, 1, 1 );
+				cow.whiteMaterial = whiteMaterial;
+				cow.shaderMaterial = shaderMaterial;
+				cow.wireframwMaterial = wireframwMaterial;
+			}
 
-				near = (frustumMatrix.elements[11] / (frustumMatrix.elements[10] - 1.0)) * 12.5 - frustumCamera.position.z/2;
-			    far = (frustumMatrix.elements[11] / (1.0 + frustumMatrix.elements[10])) * 12.5 - frustumCamera.position.z/2;
-
-			    console.log(near);
-			    console.log(far);
-
-			    // Get the sides of the near plane.
-			    nLeft = near * (frustumMatrix.elements[2] - 1.0) / frustumMatrix.elements[0];
-			    nRight = near * (1.0 + frustumMatrix.elements[2]) / frustumMatrix.elements[0];
-			    nTop = near * (1.0 + frustumMatrix.elements[6]) / frustumMatrix.elements[5];
-			    nBottom = near * (frustumMatrix.elements[6] - 1.0) / frustumMatrix.elements[5];
-
-			    // Get the sides of the far plane.
-			    fLeft = far * (frustumMatrix.elements[2] - 1.0) / frustumMatrix.elements[0];
-			    fRight = far * (1.0 + frustumMatrix.elements[2]) / frustumMatrix.elements[0];
-			    fTop = far * (1.0 + frustumMatrix.elements[6]) / frustumMatrix.elements[5];
-			    fBottom = far * (frustumMatrix.elements[6] - 1.0) / frustumMatrix.elements[5];
-
-			    frustumGeometry = new THREE.Geometry();
-			    //glVertex3f(nLeft, nBottom, -near);
-		        //glVertex3f(nRight, nBottom, -near);
-		        //glVertex3f(nRight, nTop, -near);
-		        //glVertex3f(nLeft, nTop, -near);
-		        //glVertex3f(fLeft, fBottom, -far);
-		        //glVertex3f(fRight, fBottom, -far);
-		        //glVertex3f(fRight, fTop, -far);
-		        //glVertex3f(fLeft, fTop, -far);
-		        frustumGeometry = new THREE.CubeGeometry( 2, 2, 2, 1, 1, 1 );
-		        
-			    frustumGeometry.vertices[0] =  new THREE.Vector3( nRight, nTop, -near );
-			    frustumGeometry.vertices[1] =  new THREE.Vector3( nRight, nBottom, -near );
-			    frustumGeometry.vertices[2] =  new THREE.Vector3( nLeft, nTop, -near );
-			    frustumGeometry.vertices[3] =  new THREE.Vector3( nLeft, nBottom, -near ) ;
-
-			    frustumGeometry.vertices[4] =  new THREE.Vector3( fLeft, fBottom, -far );
-			    frustumGeometry.vertices[5] =  new THREE.Vector3( fRight, fBottom, -far );
-			    frustumGeometry.vertices[6] =  new THREE.Vector3( fLeft, fTop, -far );
-			    frustumGeometry.vertices[7] =  new THREE.Vector3( fRight, fTop, -far );
-
+			function updateZmesh() {
+				frustumGeometry = new THREE.CubeGeometry( 2, 2, 2, 1, 1, 1 );
+				inversetProjectionMatrix = frustumCamera.projectionMatrix.clone();
+				inversetProjectionMatrix.getInverse(frustumCamera.projectionMatrix.clone());
+				frustumGeometry.applyMatrix(inversetProjectionMatrix);
+				frustumGeometry.computeFaceNormals();
+				frustumGeometry.computeVertexNormals();
 				frustumMesh = new THREE.Mesh( frustumGeometry, wireframwMaterial );
 				frustumMesh.position.set( frustumCamera.position.x, frustumCamera.position.y, frustumCamera.position.z );
 				frustumMesh.scale.set( 1, 1, 1 );
-
-
-				//frustumGeometry = new THREE.CubeGeometry( 2, 2, 2, 1, 1, 1 );
-				console.log(frustumGeometry);
-
-				//THREE.GeometryUtils.merge(geometry, frustumMesh);
-				zmesh = new THREE.Mesh( frustumGeometry, wireframwMaterial );
-				zmesh.position.set( x, y, z );
-				zmesh.scale.set( 1, 1, 1 );
+				scene.remove(zmesh);
+				zmesh = frustumMesh;
 				zmesh.whiteMaterial = whiteMaterial;
 				zmesh.shaderMaterial = shaderMaterial;
 				zmesh.wireframwMaterial = wireframwMaterial;
+				//console.log(zmesh);
+				
 				scene.add( zmesh );
+				//if (cow != null) {
+				//	scene.remove(zmesh);
+				//	zmeshGeom = cow.geometry;
+				//	//console.log(zmeshGeom);
+				//	THREE.GeometryUtils.merge(zmeshGeom, frustumMesh);
+				//	//console.log(zmeshGeom);
+				//	zmesh = new THREE.Mesh( zmeshGeom, wireframwMaterial );
+				//	zmesh.scale.set( 1, 1, 1 );
+				//	zmesh.whiteMaterial = whiteMaterial;
+				//	zmesh.shaderMaterial = shaderMaterial;
+				//	zmesh.wireframwMaterial = wireframwMaterial;
+				//	scene.add( zmesh );
+				//}
 			}
 
 			function onDocumentMouseMove(event) {
@@ -274,26 +255,24 @@
 
 				if (angleX > 0) normal = new THREE.Vector3(0,-1,0);
 				else normal = new THREE.Vector3(0,1,0);
-
-				webglRenderer.autoClear = false;
-
-
-				zmesh.rotation.set(angleX, angleY, 0);
-				//zmesh.material = zmesh.shaderMaterial;
-				webglRenderer.render( scene, camera, null, true );
-
-				zmesh.material = zmesh.wireframwMaterial;
-				webglRenderer.render( scene, camera, null, false );
 				
 
-				//matrix = new THREE.Matrix4();
-				//matrix.setRotationFromEuler(new THREE.Vector3(angleX, angleY, 0), "XYZ");
-				//newNormal = matrix.multiplyVector3(normal.clone());
-				//newClipPlane = new THREE.Vector4(newNormal.x, newNormal.y, newNormal.z, newNormal.dot(basePoint));
+				matrix = new THREE.Matrix4();
+				matrix.setRotationFromEuler(new THREE.Vector3(angleX, angleY, 0), "XYZ");
+				newNormal = matrix.multiplyVector3(normal.clone());
+				newClipPlane = new THREE.Vector4(newNormal.x, newNormal.y, newNormal.z, newNormal.dot(basePoint));
 
-				//ModifyProjectionMatrix(newClipPlane, camera);
+				ModifyProjectionMatrix(newClipPlane, frustumCamera);
 
-				//webglRenderer.render( scene, camera );
+
+				updateZmesh();
+
+				webglRenderer.autoClear = false;
+				zmesh.rotation.set(angleX, angleY, 0);
+
+				zmesh.material = zmesh.wireframwMaterial;
+
+				webglRenderer.render( scene, camera );
 			}
 
 		</script>

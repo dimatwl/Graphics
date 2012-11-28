@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>My graphics tasks</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background:#FFF;
+				padding:0;
+				margin:0;
+				overflow:hidden;
+				font-family:'trebuchet ms', 'lucida grande', 'lucida sans unicode', arial, helvetica, sans-serif;
+				text-align:center;
+			}
+			canvas { pointer-events:none; z-index:10; }
+			
+			p { font-size: small;}
+
+		</style>
+	</head>
+
+	<body>
+		<P>Dmitriy Shestavin graphics tasks</A> <br> </P>
+		<a href="./1/index.html">1. Явной передачей z координаты с вершинного на фрагментный шейдер.</a> <br> <br>
+		<a href="./2/index.html">2. Без передачи, восстанавливая глубину по псевдо глубине. Для получени псевдо глубины растеризуемого фрагмента следует пользовать встроенной в GLSL переменной gl_FragCoord (только для фрагментного шейдера). gl_FragCoord.z содержит значение псевдо глубины в диапазоне [0;1] (NB!, это значение необходимо перевести в [-1;1], как при выводе матрицы проекции). </a> <br> <br>
+		<a href="./3/index.html">3. Только используя gl_FragCoord </a> <br> <br>
+
+	</body>
+</html>

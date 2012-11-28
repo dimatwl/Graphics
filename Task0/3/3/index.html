@@ -48,14 +48,10 @@
 		#ifdef GL_ES
 		precision highp float;
 		#endif
-
-		uniform float near;
-		uniform float far;
 		
 		void main()
 		{
-			//float normalized = (gl_FragCoord.z * 4.0) - 3.1;
-			float normalized = (gl_FragCoord.z / gl_FragCoord.w - near) / (far - near);
+			float normalized = (gl_FragCoord.z * 4.0) - 3.1;
 			float red = (-normalized * 2.0) + 1.5;
 			float green = 0.0;
 			float blue = (normalized * 2.0) - 0.5;
@@ -65,12 +61,12 @@
 	</script>
 	<!-- End Shaders -->
 
-	<script src="../../js/detector.js"></script>
-	<script src="../../js/three.js"></script>
+	<script src="../../../js/detector.js"></script>
+	<script src="../../../js/three.js"></script>
 	
-	<script src="../../js/raf.js"></script>
+	<script src="../../../js/raf.js"></script>
 
-	<script src="../../js/jquery-1.8.2.js"></script>
+	<script src="../../../js/jquery-1.8.2.js"></script>
 
 	<script type="text/javascript">
 		if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
@@ -91,7 +87,7 @@
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
 
-		var uniforms = {
+		var attributes = {
   			near: {
     			type: 'f', // a float
     			value: 5 // an empty array
@@ -106,7 +102,6 @@
 		var fShader = $('#fragmentshader');
 
 		var shaderMaterial = new THREE.ShaderMaterial({
-			uniforms:     uniforms,
 			vertexShader:   vShader.text(),
     		fragmentShader: fShader.text()
 		});
@@ -122,7 +117,7 @@
 			document.body.appendChild( container );
 			
 			// camera
-			camera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, uniforms.near.value, uniforms.far.value );
+			camera = new THREE.PerspectiveCamera( 45, SCREEN_WIDTH / SCREEN_HEIGHT, attributes.near.value, attributes.far.value );
 			camera.position.z = 20;
 			camera.position.y = 15;
 			

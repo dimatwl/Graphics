@@ -22,10 +22,45 @@
 
 	<body>
 
+		<!-- Shaders -->
+		<script type="x-shader/x-vertex" id="vertexshader">
+			
+			// switch on high precision floats
+			#ifdef GL_ES
+			precision highp float;
+			#endif
+
+			
+			void main()
+			{
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+			}
+			
+		</script>
+		
+		<script type="x-shader/x-fragment" id="fragmentshader">
+		
+			#ifdef GL_ES
+			precision highp float;
+			#endif
+			
+			void main()
+			{
+				if (gl_FrontFacing) {
+					gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+				} else {
+					gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+				}
+			}
+		
+		</script>
+		<!-- End Shaders -->
+
 		<script src="../js/detector.js"></script>
 		<script src="../js/three.js"></script>
 		
 		<script src="../js/raf.js"></script>
+		<script src="../js/jquery-1.8.2.js"></script>
 
 		<script>
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
@@ -43,6 +78,15 @@
 
 			var mouseX = 0, mouseY = 0;
 
+			var vShader = $('#vertexshader');
+			var fShader = $('#fragmentshader');
+
+			var shaderMaterial = new THREE.ShaderMaterial({
+				//uniforms:     uniforms,
+				vertexShader:   vShader.text(),
+    			fragmentShader: fShader.text()
+			});
+
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
 
@@ -57,6 +101,7 @@
 
 			var originalProjectionMatrix = camera.projectionMatrix.clone();
 
+			var gl = null;
 
 			document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
@@ -105,6 +150,26 @@
 			    inpCamera.projectionMatrix = matrix;
 			}
 
+			function changeFaceOrientation(geometry){
+			     for(var i = 0;i<geometry.faces.length;i++){
+			        var face = geometry.faces[ i ];
+			        if ( face instanceof THREE.Face3 ) {
+			            var tmp = face.b;
+			            face.b = face.c;
+			            face.c = tmp;
+
+			        } else if ( face instanceof THREE.Face4 ) {
+			            var tmp = face.b;
+			            face.b = face.d;
+			            face.d = tmp;                
+			        }
+			    }
+
+			    geometry.computeCentroids();
+			    geometry.computeFaceNormals();
+			    geometry.computeVertexNormals();   
+			}
+
 			function init() {
 
 				container = document.createElement( 'div' );
@@ -128,6 +193,11 @@
 				webglRenderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
 				webglRenderer.domElement.style.position = "relative";
 				container.appendChild( webglRenderer.domElement );
+
+				//gl = webglRenderer.getContext();
+				//gl.disable(gl.CULL_FACE);
+				//gl.enable(gl.CULL_FACE);
+				//console.log(gl);
 				
 				// loader
 				var loader = new THREE.JSONLoader(),
@@ -135,29 +205,17 @@
 				loader.load( "../js/model.js",  callbackModel );
 
 
-				//matrix = new THREE.Matrix4();
-				//matrix.setRotationFromEuler(zmesh.rotation, "XYZ");
-				//matrix.rotateZ(Math.PI/2);
-				//clipPlane = matrix.multiplyVector4(clipPlane.clone());
-				//console.debug(matrix);
-				//console.debug(clipPlane);
-
-				console.debug(camera.projectionMatrix.determinant());
-
-				ModifyProjectionMatrix(clipPlane, camera);
-
-				console.debug(camera.projectionMatrix.determinant());
-
-
 				
 			}
 
 			function createScene( geometry, x, y, z ) {
+				//changeFaceOrientation(geometry);
+				zmesh = new THREE.Mesh( geometry, shaderMaterial );
 
-				zmesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial() );
 				zmesh.position.set( x, y, z );
 				zmesh.scale.set( 1, 1, 1 );
 				scene.add( zmesh );
+				console.log(zmesh);
 			}
 
 			function onDocumentMouseMove(event) {
@@ -193,7 +251,13 @@
 
 				ModifyProjectionMatrix(newClipPlane, camera);
 
-				console.debug(camera.projectionMatrix.determinant());
+				webglRenderer.autoClear = false;
+
+				webglRenderer.setFaceCulling("front", "ccw");
+
+				webglRenderer.render( scene, camera );
+
+				webglRenderer.setFaceCulling("back", "ccw");
 
 				webglRenderer.render( scene, camera );
 			}

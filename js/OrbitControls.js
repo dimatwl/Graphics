@@ -287,8 +287,26 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	}
 
+	function onKeyDown ( event ) {
+
+		//event.preventDefault();
+
+		switch ( event.keyCode ) {
+
+			case 38: /*up*/
+			case 87: /*W*/ scope.zoomIn(); break;
+
+			case 40: /*down*/
+			case 83: /*S*/ scope.zoomOut(); break;
+
+
+		}
+
+	}
+
 	this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 	this.domElement.addEventListener( 'mousedown', onMouseDown, false );
 	this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
+	this.domElement.addEventListener( 'keypress', onKeyDown, false );
 
 };
